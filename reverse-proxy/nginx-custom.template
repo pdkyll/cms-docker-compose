@@ -1,0 +1,15 @@
+server {
+  listen 80;
+  listen [::]:80;
+
+  location /oauth2-client {
+    proxy_pass http://oauth2-client:85/;
+  }
+  location /zuul-server/ {
+    client_max_body_size 50M;
+    proxy_pass http://zuul-server:8080/;
+  }
+  location / {
+    proxy_pass http://cms-client:85/;
+  }
+}
