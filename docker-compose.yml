@@ -130,7 +130,7 @@ services:
         configuration: production
         external_context_path: /oauth2-client/
     environment:
-      - AS_SERVER_URI=http://${ZUUL_HOST}:${SPRING_BOOT_SERVER_PORT}/${AUTHORIZATION_HOST}
+      - AS_SERVER_URI=http://${EXTERNAL_HOST}/${ZUUL_HOST}/${AUTHORIZATION_HOST}
       - OAUTH2_CLIENT_TOKEN=${OAUTH2_CLIENT_TOKEN}
     volumes:
       - ${OAUTH2_LOCATION_APPCONFIG_TEMPLATE}:/usr/share/nginx/html/assets/appConfig.template
@@ -151,8 +151,8 @@ services:
         configuration: production
         external_context_path: /
     environment:
-      - AS_SERVER_URI=http://${ZUUL_HOST}:${SPRING_BOOT_SERVER_PORT}/${AUTHORIZATION_HOST}
-      - CMS_SERVER_URI=http://${ZUUL_HOST}:${SPRING_BOOT_SERVER_PORT}/${CMS_HOST}
+      - AS_SERVER_URI=http://${EXTERNAL_HOST}/${ZUUL_HOST}/${AUTHORIZATION_HOST}
+      - CMS_SERVER_URI=http://${EXTERNAL_HOST}/${ZUUL_HOST}/${CMS_HOST}
       - CMS_CLIENT_TOKEN=${CMS_CLIENT_TOKEN}
     volumes:
       - ${CMS_LOCATION_APPCONFIG_TEMPLATE}:/usr/share/nginx/html/assets/appConfig.template
