@@ -86,7 +86,6 @@ services:
     volumes:
       - ${DATA_DIR_OBJECT_FILES}:/data/objectfiles
       - ${DATA_DIR_LUCENE}:/data/luceneindex
-      - ${CMS_LOCATION_APPCONFIG}:/usr/share/nginx/html/assets/appConfig.json
     expose:
       - "${SPRING_BOOT_SERVER_PORT}"
     build:
