@@ -1,0 +1,15 @@
+{
+    "production": true,
+    "oauthUrl": "${AS_SERVER_URI}",
+    "apiUserPath": "/api/user",
+    "apiUsersPath": "/api/users",
+    "apiRolePath": "/api/role",
+    "apiRolesPath": "/api/roles",
+    "apiOauthClientDetailPath": "/api/oauthclientdetail",
+    "apiOauthClientDetailsPath": "/api/oauthclientdetails",
+    "apiOauthAccessTokenPath": "/api/oauthaccesstoken",
+    "apiOauthAccessTokensPath": "/api/oauthaccesstokens",
+    "apiOauthRefreshTokenPath": "/api/oauthrefreshtoken",
+    "apiOauthRefreshTokensPath": "/api/oauthrefreshtokens",
+    "clientToken": "${OAUTH2_CLIENT_TOKEN}"
+}

@@ -1,0 +1,9 @@
+{
+  "production": true,
+  "oauthUrl": "${AS_SERVER_URI}",
+  "cmsUrl": "${CMS_SERVER_URI}",
+  "apiCmsObjectPath": "/api/cmsobject",
+  "apiOrderPath": "/api/order",
+  "apiFilePath": "/api/file",
+  "clientToken": "${CMS_CLIENT_TOKEN}"
+}

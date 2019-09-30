@@ -1,0 +1,182 @@
+version: '2'
+
+services:
+  database:
+    container_name: ${POSTGRES_HOST}
+    restart: unless-stopped
+    image: mwmenninga/postgres:11.5
+    volumes:
+            - ${POSTGRES_DATA_DIR}:/var/lib/postgresql/data
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+      args:
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_USER_PASSWORD: ${POSTGRES_USER_PASSWORD}
+        POSTGRES_DATABASES: ${POSTGRES_DATABASES}
+        INIT_SQL: ${INIT_SQL}
+    networks:
+      - cms_network
+  
+  eureka-server:
+    container_name: ${EUREKA_HOST}
+    restart: unless-stopped
+    image: mwmenninga/eureka-server
+    expose:
+      - "${SPRING_BOOT_SERVER_PORT}"
+    build:
+      context: ../eureka-server
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: eureka-server.jar
+    environment:
+      - spring.boot.server.port=${SPRING_BOOT_SERVER_PORT}
+      - eureka.host=${EUREKA_HOST}
+    networks:
+      - cms_network
+  
+  zuul-server:
+    container_name: ${ZUUL_HOST}
+    restart: unless-stopped
+    image: mwmenninga/zuul-server
+    expose:
+      - "${SPRING_BOOT_SERVER_PORT}"
+    ports:
+      - "${SPRING_BOOT_SERVER_PORT}:${SPRING_BOOT_SERVER_PORT}"
+    build:
+      context: ../zuul-server
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: zuul-server.jar
+    environment:
+      - spring.boot.server.port=${SPRING_BOOT_SERVER_PORT}
+      - server.name=${ZUUL_HOST}
+      - eureka.uri=http://${EUREKA_HOST}:${SPRING_BOOT_SERVER_PORT}/eureka
+    networks:
+      - cms_network
+
+  authorization-server:
+    container_name: ${AUTHORIZATION_HOST}
+    restart: unless-stopped
+    image: mwmenninga/authorization-server
+    expose:
+      - "${SPRING_BOOT_SERVER_PORT}"
+    build:
+      context: ../authorization-server
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: authorization-server.jar
+    environment:
+      - spring.boot.server.port=${SPRING_BOOT_SERVER_PORT}
+      - server.name=${AUTHORIZATION_HOST}
+      - eureka.enabled=true
+      - eureka.uri=http://${EUREKA_HOST}:${SPRING_BOOT_SERVER_PORT}/eureka
+      - db.host=${POSTGRES_HOST}
+      - db.port=${POSTGRES_PORT}
+      - db.name=${OAUTH2}
+      - db.uid=${OAUTH2_USER}
+      - db.pwd=${OAUTH2_USER_PASSWORD}
+    networks:
+      - cms_network
+
+  cms-server:
+    container_name: ${CMS_HOST}
+    restart: unless-stopped
+    image: mwmenninga/cms-server
+    volumes:
+      - ${DATA_DIR_OBJECT_FILES}:/data/objectfiles
+      - ${DATA_DIR_LUCENE}:/data/luceneindex
+      - ${CMS_LOCATION_APPCONFIG}:/usr/share/nginx/html/assets/appConfig.json
+    expose:
+      - "${SPRING_BOOT_SERVER_PORT}"
+    build:
+      context: ../cms-server
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: cms-server.jar
+    environment:
+      - spring.boot.server.port=${SPRING_BOOT_SERVER_PORT}
+      - server.name=${CMS_HOST}
+      - tokenservice.uri=http://${ZUUL_HOST}:${SPRING_BOOT_SERVER_PORT}/${AUTHORIZATION_HOST}/oauth/check_token
+      - tokenservice.clientid=${CMS_TOKENSERVICE_CLIENTID}
+      - tokenservice.clientsecret=${CMS_TOKENSERVICE_CLIENTSECRET}
+      - eureka.enabled=true
+      - eureka.uri=http://${EUREKA_HOST}:${SPRING_BOOT_SERVER_PORT}/eureka
+      - db.host=${POSTGRES_HOST}
+      - db.port=${POSTGRES_PORT}
+      - db.name=${CMSDB}
+      - db.uid=${CMSDB_USER}
+      - db.pwd=${CMSDB_USER_PASSWORD}
+      - mail.host=${MAIL_HOST}
+      - mail.port=${MAIL_PORT}
+      - mail.username=${MAIL_USERNAME}
+      - mail.password=${MAIL_PASSWORD}
+      - mail.smtp.auth=${MAIL_SMTP_AUTH}
+      - mail.smtp.starttls.enable=${MAIL_SMTP_STARTTLS_ENABLE}
+      - mail.smtp.starttls.required=${MAIL_SMTP_STARTTLS_REQUIRED}
+    networks:
+      - cms_network
+
+  oauth2-client:
+    container_name: oauth2-client
+    restart: unless-stopped
+    image: mwmenninga/oauth2-client
+    expose:
+      - "85"
+    build:
+      context: ../oauth2-client
+      dockerfile: Dockerfile
+      args:
+        configuration: production
+        external_context_path: /oauth2-client/
+    environment:
+      - AS_SERVER_URI=http://${ZUUL_HOST}:${SPRING_BOOT_SERVER_PORT}/${AUTHORIZATION_HOST}
+      - OAUTH2_CLIENT_TOKEN=${OAUTH2_CLIENT_TOKEN}
+    volumes:
+      - ${OAUTH2_LOCATION_APPCONFIG_TEMPLATE}:/usr/share/nginx/html/assets/appConfig.template
+    networks:
+      - cms_network
+    command: sh -c "envsubst < /usr/share/nginx/html/assets/appConfig.template > /usr/share/nginx/html/assets/appConfig.json && nginx -g 'daemon off;'"
+
+  cms-client:
+    container_name: cms-client
+    restart: unless-stopped
+    image: mwmenninga/cms-client
+    expose:
+      - "85"
+    build:
+      context: ../cms-client
+      dockerfile: Dockerfile
+      args:
+        configuration: production
+        external_context_path: /
+    environment:
+      - AS_SERVER_URI=http://${ZUUL_HOST}:${SPRING_BOOT_SERVER_PORT}/${AUTHORIZATION_HOST}
+      - CMS_SERVER_URI=http://${ZUUL_HOST}:${SPRING_BOOT_SERVER_PORT}/${CMS_HOST}
+      - CMS_CLIENT_TOKEN=${CMS_CLIENT_TOKEN}
+    volumes:
+      - ${CMS_LOCATION_APPCONFIG_TEMPLATE}:/usr/share/nginx/html/assets/appConfig.template
+    networks:
+      - cms_network
+    command: sh -c "envsubst < /usr/share/nginx/html/assets/appConfig.template > /usr/share/nginx/html/assets/appConfig.json && nginx -g 'daemon off;'"
+
+  reverse-proxy:
+    container_name: reverse-proxy
+    restart: unless-stopped
+    image: nginx:1.17.4-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    expose:
+      - "80"
+      - "443"
+    volumes:
+      - ./reverse-proxy/nginx-custom.template:/etc/nginx/conf.d/nginx-custom.template
+      - ./data-dir/certificates:/etc/letsencrypt/live
+    networks:
+      - cms_network
+    command: sh -c "envsubst < /etc/nginx/conf.d/nginx-custom.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+
+networks:
+  cms_network:
+    driver: bridge
