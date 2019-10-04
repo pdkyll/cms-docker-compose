@@ -169,12 +169,17 @@ services:
     expose:
       - "80"
       - "443"
+    environment:
+      - DOMAIN=${EXTERNAL_HOST}
     volumes:
-      - ./reverse-proxy/nginx-custom.template:/etc/nginx/conf.d/nginx-custom.template
+      - ./reverse-proxy/nginx-custom-http.template:/etc/nginx/conf.d/nginx-custom-http.template
+#      - ./reverse-proxy/nginx-custom-http-ssl.template:/etc/nginx/conf.d/nginx-custom-http-ssl.conf
+#      - ./reverse-proxy/nginx-custom-https.template:/etc/nginx/conf.d/nginx-custom-https.template
       - ./data-dir/certificates:/etc/letsencrypt/live
     networks:
       - cms_network
-    command: sh -c "envsubst < /etc/nginx/conf.d/nginx-custom.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+    command: sh -c "envsubst < /etc/nginx/conf.d/nginx-custom-http.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+#    command: sh -c "envsubst < /etc/nginx/conf.d/nginx-custom-https.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
 
 networks:
   cms_network:
