@@ -12,8 +12,9 @@ services:
       - "443"
     volumes:
       - ./nginx-custom.template:/etc/nginx/conf.d/nginx-custom.template
+      - ./util.sh:/scripts/util.sh
       - ../data-dir/certificates:/etc/letsencrypt/live
     environment:
       - CERTBOT_EMAIL=${CORPORATE_EMAIL}
       - DOMAIN=${DOMAIN}
-    command: /bin/bash -c "envsubst < /etc/nginx/conf.d/nginx-custom.template > /etc/nginx/conf.d/default.conf && /scripts/entrypoint.sh"
+    command: /bin/bash -c "envsubst < /etc/nginx/conf.d/nginx-custom.template > /etc/nginx/conf.d/default.conf && chmod +x /scripts/util.sh  && /scripts/entrypoint.sh"
