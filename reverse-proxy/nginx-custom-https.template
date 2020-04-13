@@ -1,6 +1,12 @@
 server {
-  listen              443 ssl;
+  listen              443 ssl http2;
   server_name         ${DOMAIN};
+
+  gzip on;
+  gzip_types      text/html text/xml text/plain text/css text/javascript application/javascript application/json image/jpeg image/jpg image/png image/bmp image/gif;
+  gzip_proxied    no-cache no-store private expired auth;
+  gzip_min_length 256;
+
   ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
 
